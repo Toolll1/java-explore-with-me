@@ -3,6 +3,7 @@ package ru.practicum.model;
 import lombok.*;
 
 import javax.validation.constraints.NotEmpty;
+
 @Setter
 @Getter
 @AllArgsConstructor
