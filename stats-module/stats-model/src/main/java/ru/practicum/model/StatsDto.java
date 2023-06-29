@@ -2,17 +2,12 @@ package ru.practicum.model;
 
 import lombok.*;
 
-@Setter
-@Getter
+@Data
 @AllArgsConstructor
-@NoArgsConstructor
-@EqualsAndHashCode
-@ToString
 @Builder
 public class StatsDto {
 
-    String app;
-    String uri;
-    Long hits;
-
+    private final String app;
+    private final String uri;
+    private final Long hits;
 }

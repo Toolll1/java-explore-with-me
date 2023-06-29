@@ -4,21 +4,17 @@ import lombok.*;
 
 import javax.validation.constraints.NotEmpty;
 
-@Setter
-@Getter
+@Data
 @AllArgsConstructor
-@NoArgsConstructor
-@EqualsAndHashCode
-@ToString
 @Builder
 public class HitDto {
 
     @NotEmpty
-    String app;
+    private final String app;
     @NotEmpty
-    String uri;
+    private final String uri;
     @NotEmpty
-    String ip;
+    private final String ip;
     @NotEmpty
-    String timestamp;
+    private final String timestamp;
 }
