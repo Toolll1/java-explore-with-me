@@ -19,8 +19,6 @@ import ru.practicum.model.HitDto;
 import ru.practicum.model.StatsDto;
 import ru.practicum.models.event.*;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.*;
 
 import ru.practicum.repositories.EventRepository;

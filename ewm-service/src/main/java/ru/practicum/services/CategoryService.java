@@ -40,7 +40,7 @@ public class CategoryService {
 
         Category category = findCategoryById(catId);
 
-        if (dto.getName().length() > 50){
+        if (dto.getName().length() > 50) {
             throw new BadRequestException("the maximum length of the name is 49 characters");
         }
 
