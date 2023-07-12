@@ -8,7 +8,6 @@ import ru.practicum.models.category.Category;
 import ru.practicum.models.user.User;
 
 import javax.persistence.*;
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
@@ -17,7 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Table(name = "events")
-public class Event implements Serializable {
+public class Event {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,9 +24,12 @@ public class Event implements Serializable {
     private final Integer id;
     @Column(name = "annotation", nullable = false)
     private String annotation;
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User initiator;
     @Column(name = "description", nullable = false)
     private String description;
     @Column(name = "event_date")
@@ -44,9 +46,6 @@ public class Event implements Serializable {
     private Boolean requestModeration;
     @Column(name = "title", nullable = false)
     private String title;
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id")
-    private User initiator;
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private EventState status;
