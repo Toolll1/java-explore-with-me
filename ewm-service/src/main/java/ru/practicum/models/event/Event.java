@@ -25,7 +25,7 @@ public class Event implements Serializable {
     private final Integer id;
     @Column(name = "annotation", nullable = false)
     private String annotation;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     private Category category;
     @Column(name = "description", nullable = false)
@@ -44,7 +44,7 @@ public class Event implements Serializable {
     private Boolean requestModeration;
     @Column(name = "title", nullable = false)
     private String title;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private User initiator;
     @Enumerated(EnumType.STRING)
