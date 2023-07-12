@@ -4,10 +4,11 @@ import lombok.*;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class StatsDto {
 
-    private final String app;
-    private final String uri;
-    private final Long hits;
+    private  String app;
+    private  String uri;
+    private  Long hits;
 }

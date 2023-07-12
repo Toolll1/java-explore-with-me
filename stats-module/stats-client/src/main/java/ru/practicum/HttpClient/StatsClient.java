@@ -3,20 +3,22 @@ package ru.practicum.HttpClient;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import ru.practicum.model.HitDto;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 
+@Service
 public class StatsClient {
 
-    @Value("${stats-server.url}")
+    @Value("${stats-server.url:http://localhost:9090}")
     private String serverUrl;
     private final RestTemplate rest;
 
@@ -49,12 +51,20 @@ public class StatsClient {
 
     public ResponseEntity<Object> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
 
-        HashMap<String, Object> params = new HashMap<>(Map.of("start", start, "end", end, "uris", uris, "unique", unique));
+        StringBuilder url = new StringBuilder(serverUrl + "/stats?");
+
+        for (String uri : uris) {
+            url.append("&uris=").append(uri);
+        }
+
+        url.append("&unique=").append(unique);
+        url.append("&start=").append(start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        url.append("&end=").append(end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
         ResponseEntity<Object> response;
 
         try {
-            response = rest.getForEntity(serverUrl + "/stats", Object.class, params);
+            response = rest.exchange(url.toString(), HttpMethod.GET, null, Object.class);
         } catch (HttpStatusCodeException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
         }
