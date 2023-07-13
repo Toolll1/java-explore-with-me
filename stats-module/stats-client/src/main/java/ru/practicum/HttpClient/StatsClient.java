@@ -9,7 +9,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-import ru.practicum.model.HitDto;
+import ru.practicum.dto.HitDto;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

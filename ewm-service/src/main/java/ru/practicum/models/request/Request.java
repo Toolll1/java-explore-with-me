@@ -21,7 +21,7 @@ public class Request {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "request_id")
-    private final Integer id;
+    private final Long id;
     @Column(name = "request_date")
     private LocalDateTime created;
     @ManyToOne

@@ -12,11 +12,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.HttpClient.StatsClient;
 import ru.practicum.adapters.DateTimeAdapter;
+import ru.practicum.dto.event.EventDto;
+import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventShortDto;
+import ru.practicum.dto.event.UpdateEventDto;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ConflictException;
 import ru.practicum.exceptions.ObjectNotFoundException;
-import ru.practicum.model.HitDto;
-import ru.practicum.model.StatsDto;
+import ru.practicum.mappers.EventMapper;
+import ru.practicum.dto.HitDto;
+import ru.practicum.dto.StatsDto;
 import ru.practicum.models.event.*;
 
 import javax.persistence.criteria.*;
@@ -39,9 +44,7 @@ public class EventService {
     private final CategoryService categoryService;
     private final StatsClient statsClient;
 
-    public EventFullDto createEventPrivate(EventDto dto, int userId) {
-
-        log.info("Received a request to create a event " + dto);
+    public EventFullDto createEventPrivate(EventDto dto, Long userId) {
 
         eventDateControl(dto.getEventDate(), 2);
         categoryService.findCategoryById(dto.getCategory());
@@ -66,35 +69,29 @@ public class EventService {
         return EventMapper.objectToFullDto(repository.save(event));
     }
 
-    public List<EventShortDto> getEventsPrivate(int userId, Integer from, Integer size) {
-
-        log.info("Received a request to search for all events for params: userId {}, from {}, size {}", userId, from, size);
+    public List<EventShortDto> getEventsPrivate(Long userId, Integer from, Integer size) {
 
         PageRequest pageable = pageableCreator(from, size, null);
 
         return repository.findAllByInitiatorId(userId, pageable).stream().map(EventMapper::objectToShortDto).collect(Collectors.toList());
     }
 
-    public EventFullDto getEventPrivate(int userId, int eventId) {
-
-        log.info("Received a request to search event for params: userId {}, eventId {}", userId, eventId);
+    public EventFullDto getEventPrivate(Long userId, Long eventId) {
 
         userService.findUserById(userId);
 
         Event event = findEventById(eventId);
 
         if (!event.getInitiator().getId().equals(userId)) {
+            log.info("method getEventPrivate - ObjectNotFoundException \"you are not the initiator of this event\"");
             throw new ObjectNotFoundException("you are not the initiator of this event");
         } else {
             return EventMapper.objectToFullDto(event);
         }
     }
 
-    public List<EventFullDto> getEventsAdmin(List<Integer> users, List<String> states, List<Integer> categories,
+    public List<EventFullDto> getEventsAdmin(List<Long> users, List<String> states, List<Long> categories,
                                              String rangeStart, String rangeEnd, Integer from, Integer size) {
-
-        log.info("Received a request to admin search events for params: users {}, states {}, categories {}, rangeStart {}, " +
-                "rangeEnd {}, from {}, size {}", users, states, categories, rangeStart, rangeEnd, from, size);
 
         PageRequest pageable = pageableCreator(from, size, null);
         Page<Event> eventPage = creatingRequestAdmin(users, states, categories, rangeStart, rangeEnd, pageable);
@@ -103,12 +100,9 @@ public class EventService {
         return eventsSet.stream().map(EventMapper::objectToFullDto).collect(Collectors.toList());
     }
 
-    public List<EventShortDto> getEventsPublic(String text, List<Integer> categories, Boolean paid, String rangeStart,
+    public List<EventShortDto> getEventsPublic(String text, List<Long> categories, Boolean paid, String rangeStart,
                                                String rangeEnd, Boolean onlyAvailable, String sort, Integer from,
                                                Integer size, String ip, String path) {
-
-        log.info("Received a request to public search events for params: text {}, categories {}, paid {}, rangeStart {}, " +
-                "rangeEnd {}, onlyAvailable {}, sort {}, from {}, size {}", text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 
         PageRequest pageable = pageableCreator(from, size, sort);
         Page<Event> eventPage = creatingRequestPublic(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable);
@@ -119,13 +113,12 @@ public class EventService {
         return eventsSet.stream().map(EventMapper::objectToShortDto).collect(Collectors.toList());
     }
 
-    public EventFullDto getEventPublic(int eventId, String ip, String path) {
-
-        log.info("Received a request to public search event for id {}", eventId);
+    public EventFullDto getEventPublic(Long eventId, String ip, String path) {
 
         Event event = findEventById(eventId);
 
         if (!event.getStatus().equals(EventState.PUBLISHED)) {
+            log.info("method getEventPublic - ObjectNotFoundException \"the event must be published\"");
             throw new ObjectNotFoundException("the event must be published");
         }
 
@@ -145,9 +138,7 @@ public class EventService {
         return EventMapper.objectToFullDto(event);
     }
 
-    public EventFullDto updateEventPrivate(UpdateEventDto dto, int userId, int eventId) {
-
-        log.info("Received a request to Private update a event {}. userId = {}, eventId = {}", dto, userId, eventId);
+    public EventFullDto updateEventPrivate(UpdateEventDto dto, Long userId, Long eventId) {
 
         userService.findUserById(userId);
 
@@ -155,8 +146,11 @@ public class EventService {
         Event oldEvent = findEventById(eventId);
 
         if (!oldEvent.getInitiator().getId().equals(userId)) {
+            log.info("method updateEventPrivate - ObjectNotFoundException \"you are not the initiator of this event\"");
             throw new ObjectNotFoundException("you are not the initiator of this event");
         } else if (oldEvent.getStatus().equals(EventState.PUBLISHED)) {
+            log.info("method updateEventPrivate - ObjectNotFoundException \"you can only change canceled events or " +
+                    "events in the state of waiting for moderation\"");
             throw new ConflictException("you can only change canceled events or events in the state of waiting for moderation");
         }
 
@@ -165,9 +159,7 @@ public class EventService {
         return EventMapper.objectToFullDto(repository.save(newEvent));
     }
 
-    public EventFullDto updateEventAdmin(UpdateEventDto dto, int eventId) {
-
-        log.info("Received a request to Admin update a event {}. eventId = {}", dto, eventId);
+    public EventFullDto updateEventAdmin(UpdateEventDto dto, Long eventId) {
 
         Event event = findEventById(eventId);
         int maximumHoursDeviation = 1;
@@ -181,15 +173,9 @@ public class EventService {
         repository.save(event);
     }
 
-    public Event findEventById(int eventId) {
+    public Event findEventById(Long eventId) {
 
-        Optional<Event> event = repository.findById(eventId);
-
-        if (event.isEmpty()) {
-            throw new ObjectNotFoundException("There is no event with this id");
-        }
-
-        return event.get();
+        return repository.findById(eventId).orElseThrow(() -> new ObjectNotFoundException("There is no event with this id"));
     }
 
     private void createHit(String ip, String path) {
@@ -205,6 +191,8 @@ public class EventService {
     private void eventDateControl(String eventDate, int hours) {
 
         if (Objects.requireNonNull(DateTimeAdapter.stringToDate(eventDate)).isBefore(LocalDateTime.now().plusHours(hours))) {
+            log.info("method eventDateControl - BadRequestException \"the date and time for which the event is scheduled " +
+                    "cannot be earlier than two hours from the current moment\"");
             throw new BadRequestException("the date and time for which the event is scheduled cannot be earlier than " +
                     "two hours from the current moment");
         }
@@ -213,6 +201,8 @@ public class EventService {
     private PageRequest pageableCreator(Integer from, Integer size, String sort) {
 
         if (from < 0 || size <= 0) {
+            log.info("method pageableCreator - BadRequestException \"the from parameter must be greater than or equal " +
+                    "to 0; size is greater than 0\"");
             throw new BadRequestException("the from parameter must be greater than or equal to 0; size is greater than 0");
         }
         if (sort == null || sort.isEmpty()) {
@@ -237,6 +227,7 @@ public class EventService {
         }
         if (dto.getAnnotation() != null && !dto.getAnnotation().isBlank()) {
             if (dto.getAnnotation().length() < 20 || dto.getAnnotation().length() > 2000) {
+                log.info("method eventValidator - BadRequestException \"incorrect length of the annotation parameter\"");
                 throw new BadRequestException("incorrect length of the annotation parameter");
             } else {
                 event.setAnnotation(dto.getAnnotation());
@@ -247,6 +238,7 @@ public class EventService {
         }
         if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
             if (dto.getDescription().length() < 20 || dto.getDescription().length() > 7000) {
+                log.info("method eventValidator - BadRequestException \"incorrect length of the description parameter\"");
                 throw new BadRequestException("incorrect length of the description parameter");
             } else {
                 event.setDescription(dto.getDescription());
@@ -261,6 +253,7 @@ public class EventService {
         }
         if (dto.getParticipantLimit() != null) {
             if (dto.getParticipantLimit() < 1) {
+                log.info("method eventValidator - BadRequestException \"the participantLimit must be positive\"");
                 throw new BadRequestException("the participantLimit must be positive");
             }
             event.setParticipantLimit(dto.getParticipantLimit());
@@ -279,18 +272,21 @@ public class EventService {
                 if (event.getStatus().equals(EventState.PENDING) && dto.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
                     event.setStatus(EventState.PUBLISHED);
                 } else if (!event.getStatus().equals(EventState.PENDING) && dto.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
+                    log.info("method eventValidator - ConflictException \"an event can be published only if it is in the waiting state for publication\"");
                     throw new ConflictException("an event can be published only if it is in the waiting state for publication");
                 }
                 if (!event.getStatus().equals(EventState.PUBLISHED) && dto.getStateAction().equals(StateAction.REJECT_EVENT)) {
                     event.setStatus(EventState.CANCELED);
                     event.setPublishedOn(LocalDateTime.now());
                 } else if (event.getStatus().equals(EventState.PUBLISHED) && dto.getStateAction().equals(StateAction.REJECT_EVENT)) {
+                    log.info("method eventValidator - ConflictException \"an event can be rejected only if it has not been published yet\"");
                     throw new ConflictException("an event can be rejected only if it has not been published yet");
                 }
             }
         }
         if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
             if (dto.getTitle().length() < 3 || dto.getTitle().length() > 120) {
+                log.info("method eventValidator - BadRequestException \"incorrect length of the title parameter\"");
                 throw new BadRequestException("incorrect length of the title parameter");
             } else {
                 event.setTitle(dto.getTitle());
@@ -300,7 +296,7 @@ public class EventService {
         return event;
     }
 
-    private Page<Event> creatingRequestPublic(String text, List<Integer> categories, Boolean paid, String rangeStart,
+    private Page<Event> creatingRequestPublic(String text, List<Long> categories, Boolean paid, String rangeStart,
                                               String rangeEnd, Boolean onlyAvailable, PageRequest pageable) {
 
         return repository.findAll((root, criteriaQuery, criteriaBuilder) -> {
@@ -313,8 +309,8 @@ public class EventService {
             predicates.add(predicateForGrade);
 
             if (categories != null && !categories.isEmpty()) {
-                CriteriaBuilder.In<Integer> in = criteriaBuilder.in(root.get("category"));
-                for (Integer categoriesId : categories) {
+                CriteriaBuilder.In<Long> in = criteriaBuilder.in(root.get("category"));
+                for (Long categoriesId : categories) {
                     in.value(categoriesId);
                 }
                 predicates.add(in);
@@ -327,6 +323,7 @@ public class EventService {
             LocalDateTime start = DateTimeAdapter.stringToDate(rangeStart);
             LocalDateTime end = DateTimeAdapter.stringToDate(rangeEnd);
             if (start != null && end != null && start.isAfter(end)) {
+                log.info("method creatingRequestPublic - BadRequestException \"the beginning of the range cannot start before the end of the range\"");
                 throw new BadRequestException("the beginning of the range cannot start before the end of the range");
             }
             predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("eventDate"), Objects.requireNonNullElseGet(start, LocalDateTime::now)));
@@ -344,7 +341,7 @@ public class EventService {
         }, pageable);
     }
 
-    private Page<Event> creatingRequestAdmin(List<Integer> users, List<String> states, List<Integer> categories,
+    private Page<Event> creatingRequestAdmin(List<Long> users, List<String> states, List<Long> categories,
                                              String rangeStart, String rangeEnd, PageRequest pageable) {
 
         return repository.findAll((root, criteriaQuery, criteriaBuilder) -> {
@@ -352,8 +349,8 @@ public class EventService {
             List<Predicate> predicates = new ArrayList<>();
 
             if (users != null && !users.isEmpty() && !(users.size() == 1 && users.get(0) == 0)) {
-                CriteriaBuilder.In<Integer> in = criteriaBuilder.in(root.get("initiator"));
-                for (Integer initiatorId : users) {
+                CriteriaBuilder.In<Long> in = criteriaBuilder.in(root.get("initiator"));
+                for (Long initiatorId : users) {
                     in.value(initiatorId);
                 }
                 predicates.add(in);
@@ -371,8 +368,8 @@ public class EventService {
             }
 
             if (categories != null && !categories.isEmpty()) {
-                CriteriaBuilder.In<Integer> in = criteriaBuilder.in(root.get("category"));
-                for (Integer categoriesId : categories) {
+                CriteriaBuilder.In<Long> in = criteriaBuilder.in(root.get("category"));
+                for (Long categoriesId : categories) {
                     in.value(categoriesId);
                 }
                 predicates.add(in);
@@ -381,6 +378,7 @@ public class EventService {
             LocalDateTime start = DateTimeAdapter.stringToDate(rangeStart);
             LocalDateTime end = DateTimeAdapter.stringToDate(rangeEnd);
             if (start != null && end != null && start.isAfter(end)) {
+                log.info("method creatingRequestAdmin - BadRequestException \"the beginning of the range cannot start before the end of the range\"");
                 throw new BadRequestException("the beginning of the range cannot start before the end of the range");
             }
             predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("eventDate"), Objects.requireNonNullElseGet(start, LocalDateTime::now)));

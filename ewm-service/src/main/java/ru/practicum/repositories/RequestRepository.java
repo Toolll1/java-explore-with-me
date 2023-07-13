@@ -7,14 +7,14 @@ import ru.practicum.models.request.RequestState;
 import java.util.List;
 import java.util.Optional;
 
-public interface RequestRepository extends JpaRepository<Request, Integer> {
-    Optional<Request> findAllByEventIdAndRequesterId(Integer event, int userId);
+public interface RequestRepository extends JpaRepository<Request, Long> {
+    Optional<Request> findAllByEventIdAndRequesterId(Long event, Long userId);
 
-    List<Request> findByRequesterId(int userId);
+    List<Request> findByRequesterId(Long userId);
 
-    List<Request> findAllByEventIdAndStatus(int eventId, RequestState requestState);
+    List<Request> findAllByEventIdAndStatus(Long eventId, RequestState requestState);
 
-    List<Request> findByEventInitiatorIdAndEventId(int userId, int eventId);
+    List<Request> findByEventInitiatorIdAndEventId(Long userId, Long eventId);
 
-    List<Request> findAllByIdInAndEventInitiatorIdAndEventIdAndStatus(List<Integer> ids, int userId, int eventId, RequestState confirmed);
+    List<Request> findAllByIdInAndEventInitiatorIdAndEventIdAndStatus(List<Long> ids, Long userId, Long eventId, RequestState confirmed);
 }

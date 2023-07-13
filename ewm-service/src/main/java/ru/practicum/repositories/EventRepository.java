@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import ru.practicum.models.event.Event;
 import java.util.List;
 
-public interface EventRepository extends JpaRepository<Event, Integer>, JpaSpecificationExecutor<Event> {
-    List<Event> findAllByInitiatorId(int userId, PageRequest of);
+public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
+    List<Event> findAllByInitiatorId(Long userId, PageRequest pageable);
 }
 

@@ -8,12 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ObjectNotFoundException;
 import ru.practicum.models.user.User;
-import ru.practicum.models.user.UserDto;
-import ru.practicum.models.user.UserMapper;
+import ru.practicum.dto.user.UserDto;
+import ru.practicum.mappers.UserMapper;
 import ru.practicum.repositories.UserRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -28,18 +27,16 @@ public class UserService {
 
     public UserDto createUser(UserDto dto) {
 
-        log.info("Received a request to create a user " + dto);
-
         User user = repository.save(mapper.dtoToObject(dto));
 
         return UserMapper.objectToDto(user);
     }
 
-    public List<UserDto> getUsers(List<Integer> ids, Integer from, Integer size) {
-
-        log.info("Received a request to search for all users for params: ids {}, from {}, size {}", ids, from, size);
+    public List<UserDto> getUsers(List<Long> ids, Integer from, Integer size) {
 
         if (from < 0 || size <= 0) {
+            log.info("method getUsers - " +
+                    "BadRequestException \"the from parameter must be greater than or equal to 0; size is greater than 0\"");
             throw new BadRequestException("the from parameter must be greater than or equal to 0; size is greater than 0");
         }
 
@@ -50,23 +47,15 @@ public class UserService {
         }
     }
 
-    public void deleteUser(int userId) {
-
-        log.info("Received a request to delete a user with an id " + userId);
+    public void deleteUser(Long userId) {
 
         findUserById(userId);
 
         repository.deleteById(userId);
     }
 
-    public User findUserById(int userId) {
+    public User findUserById(Long userId) {
 
-        Optional<User> user = repository.findById(userId);
-
-        if (user.isEmpty()) {
-            throw new ObjectNotFoundException("There is no user with this id");
-        } else {
-            return user.get();
-        }
+        return repository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("There is no user with this id"));
     }
 }

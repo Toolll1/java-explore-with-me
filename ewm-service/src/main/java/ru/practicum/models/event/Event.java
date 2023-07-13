@@ -21,7 +21,7 @@ public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "event_id")
-    private final Integer id;
+    private final Long id;
     @Column(name = "annotation", nullable = false)
     private String annotation;
     @ManyToOne

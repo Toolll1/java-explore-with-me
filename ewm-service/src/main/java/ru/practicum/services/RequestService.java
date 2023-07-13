@@ -5,9 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.adapters.DateTimeAdapter;
+import ru.practicum.dto.request.RequestDto;
+import ru.practicum.dto.request.RequestUpdateResultDto;
+import ru.practicum.dto.request.UpdateRequestDto;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ConflictException;
 import ru.practicum.exceptions.ObjectNotFoundException;
+import ru.practicum.mappers.RequestMapper;
 import ru.practicum.models.event.Event;
 import ru.practicum.models.event.EventState;
 import ru.practicum.models.request.*;
@@ -30,9 +34,7 @@ public class RequestService {
     private final EventService eventService;
     private final UserService userService;
 
-    public RequestDto createRequest(int userId, int eventId) {
-
-        log.info("Received a request to create a request for params: userId {}, eventId {}", userId, eventId);
+    public RequestDto createRequest(Long userId, Long eventId) {
 
         userService.findUserById(userId);
         eventService.findEventById(eventId);
@@ -45,23 +47,21 @@ public class RequestService {
         return RequestMapper.objectToDto(request);
     }
 
-    public List<RequestDto> getRequestDto(int userId) {
-
-        log.info("Received a request to search for all request for userId {}", userId);
+    public List<RequestDto> getRequestDto(Long userId) {
 
         userService.findUserById(userId);
 
         return repository.findByRequesterId(userId).stream().map(RequestMapper::objectToDto).collect(Collectors.toList());
     }
 
-    public List<RequestDto> getEventRequestPrivate(int userId, int eventId) {
-
-        log.info("Received a request to search for all request for userId {} and eventId {}", userId, eventId);
+    public List<RequestDto> getEventRequestPrivate(Long userId, Long eventId) {
 
         userService.findUserById(userId);
         Event event = eventService.findEventById(eventId);
 
         if (!event.getInitiator().getId().equals(userId)) {
+            log.info("method getEventRequestPrivate - " +
+                    "BadRequestException \"you cannot upload requests to confirm participation in an event initiated by another user\"");
             throw new BadRequestException("you cannot upload requests to confirm participation in an event initiated by another user");
         }
 
@@ -69,9 +69,7 @@ public class RequestService {
                 .sorted(Comparator.comparing(RequestDto::getStatus)).collect(Collectors.toList());
     }
 
-    public RequestDto updateRequest(int userId, int requestId) {
-
-        log.info("Received a request to update a request. userId = {}, requestId = {}", userId, requestId);
+    public RequestDto updateRequest(Long userId, Long requestId) {
 
         userService.findUserById(userId);
         Request request = findRequestById(requestId);
@@ -83,20 +81,20 @@ public class RequestService {
         return RequestMapper.objectToDto(repository.save(request));
     }
 
-    public RequestUpdateResult updateRequestPrivate(UpdateRequestDto dto, int userId, int eventId) {
-
-        log.info("Received a request to Private update a request {}. userId = {}, eventId = {}", dto, userId, eventId);
+    public RequestUpdateResultDto updateRequestPrivate(UpdateRequestDto dto, Long userId, Long eventId) {
 
         userService.findUserById(userId);
         Event event = eventService.findEventById(eventId);
 
         if (!event.getInitiator().getId().equals(userId)) {
+            log.info("method RequestUpdateResultDto - " +
+                    "BadRequestException \"you cannot update requests to confirm participation in an event initiated by another user\"");
             throw new BadRequestException("you cannot update requests to confirm participation in an event initiated by another user");
         }
 
         requestProcessing(event, dto);
 
-        List<Integer> ids = dto.getRequestIds();
+        List<Long> ids = dto.getRequestIds();
 
         List<RequestDto> confirmedRequests = repository
                 .findAllByIdInAndEventInitiatorIdAndEventIdAndStatus(ids, userId, eventId, RequestState.CONFIRMED)
@@ -109,16 +107,18 @@ public class RequestService {
                 .map(RequestMapper::objectToDto)
                 .collect(Collectors.toList());
 
-        return RequestUpdateResult.builder().confirmedRequests(confirmedRequests).rejectedRequests(rejectedRequests).build();
+        return RequestUpdateResultDto.builder().confirmedRequests(confirmedRequests).rejectedRequests(rejectedRequests).build();
     }
 
     private void requestProcessing(Event event, UpdateRequestDto dto) {
 
-        for (Integer requestId : dto.getRequestIds()) {
+        for (Long requestId : dto.getRequestIds()) {
 
             Request request = findRequestById(requestId);
 
             if (!request.getStatus().equals(RequestState.PENDING)) {
+                log.info("method requestProcessing - " +
+                        "ConflictException \"an application with an id \" + requestId + \" is in a status other than PENDING\"");
                 throw new ConflictException("an application with an id " + requestId + " is in a status other than PENDING");
             }
 
@@ -150,19 +150,16 @@ public class RequestService {
 
             repository.saveAll(canceledRequests);
 
+            log.info("method canceledRequests - " +
+                    "ConflictException \"the limit on applications for this event has already been reached\"");
+
             throw new ConflictException("the limit on applications for this event has already been reached");
         }
     }
 
-    private Request findRequestById(int requestId) {
+    private Request findRequestById(Long requestId) {
 
-        Optional<Request> request = repository.findById(requestId);
-
-        if (request.isEmpty()) {
-            throw new ObjectNotFoundException("There is no request with this id");
-        } else {
-            return request.get();
-        }
+        return repository.findById(requestId).orElseThrow(() -> new ObjectNotFoundException("There is no request with this id"));
     }
 
     private void updateEventRequest(Request request, int change) {
@@ -175,7 +172,7 @@ public class RequestService {
         }
     }
 
-    private RequestDto newRequestValidate(int requesterId, int eventId) {
+    private RequestDto newRequestValidate(Long requesterId, Long eventId) {
 
         RequestDto dto = RequestDto.builder()
                 .requester(requesterId)
@@ -187,15 +184,20 @@ public class RequestService {
         Event event = eventService.findEventById(dto.getEvent());
 
         if (checkRequest.isPresent()) {
+            log.info("method newRequestValidate - ConflictException \"you cannot add a repeat request\"");
             throw new ConflictException("you cannot add a repeat request");
         }
         if (event.getInitiator().getId().equals(requesterId)) {
+            log.info("method newRequestValidate - " +
+                    "ConflictException \"the initiator of the event cannot add a request to participate in his event\"");
             throw new ConflictException("the initiator of the event cannot add a request to participate in his event");
         }
         if (!event.getStatus().equals(EventState.PUBLISHED)) {
+            log.info("method newRequestValidate - ConflictException \"you cannot participate in an unpublished event\"");
             throw new ConflictException("you cannot participate in an unpublished event");
         }
         if (event.getParticipantLimit() != 0 && event.getParticipantLimit().equals(event.getConfirmedRequests())) {
+            log.info("method newRequestValidate - ConflictException \"the event has reached the limit of participation requests\"");
             throw new ConflictException("the event has reached the limit of participation requests");
         }
         if (event.getParticipantLimit() == 0) {
