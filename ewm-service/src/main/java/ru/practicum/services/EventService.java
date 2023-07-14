@@ -12,17 +12,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.HttpClient.StatsClient;
 import ru.practicum.adapters.DateTimeAdapter;
-import ru.practicum.dto.event.EventDto;
-import ru.practicum.dto.event.EventFullDto;
-import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.dto.event.UpdateEventDto;
+import ru.practicum.dto.EventDto;
+import ru.practicum.dto.EventFullDto;
+import ru.practicum.dto.EventShortDto;
+import ru.practicum.dto.EventUpdateDto;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ConflictException;
 import ru.practicum.exceptions.ObjectNotFoundException;
 import ru.practicum.mappers.EventMapper;
 import ru.practicum.dto.HitDto;
 import ru.practicum.dto.StatsDto;
-import ru.practicum.models.event.*;
+import ru.practicum.models.Event;
+import ru.practicum.models.EventState;
+import ru.practicum.models.EventStateAction;
 
 import javax.persistence.criteria.*;
 
@@ -138,7 +140,7 @@ public class EventService {
         return EventMapper.objectToFullDto(event);
     }
 
-    public EventFullDto updateEventPrivate(UpdateEventDto dto, Long userId, Long eventId) {
+    public EventFullDto updateEventPrivate(EventUpdateDto dto, Long userId, Long eventId) {
 
         userService.findUserById(userId);
 
@@ -159,7 +161,7 @@ public class EventService {
         return EventMapper.objectToFullDto(repository.save(newEvent));
     }
 
-    public EventFullDto updateEventAdmin(UpdateEventDto dto, Long eventId) {
+    public EventFullDto updateEventAdmin(EventUpdateDto dto, Long eventId) {
 
         Event event = findEventById(eventId);
         int maximumHoursDeviation = 1;
@@ -219,7 +221,7 @@ public class EventService {
         }
     }
 
-    private Event eventValidator(UpdateEventDto dto, Event event, int hours, boolean checkAdmin) {
+    private Event eventValidator(EventUpdateDto dto, Event event, int hours, boolean checkAdmin) {
 
         if (dto.getEventDate() != null) {
             eventDateControl(dto.getEventDate(), hours);
@@ -261,24 +263,24 @@ public class EventService {
         if (dto.getRequestModeration() != null) {
             event.setRequestModeration(dto.getRequestModeration());
         }
-        if (dto.getStateAction() != null) {
+        if (dto.getEventStateAction() != null) {
             if (!checkAdmin) {
-                if (event.getStatus().equals(EventState.CANCELED) && dto.getStateAction().equals(StateAction.SEND_TO_REVIEW)) {
+                if (event.getStatus().equals(EventState.CANCELED) && dto.getEventStateAction().equals(EventStateAction.SEND_TO_REVIEW)) {
                     event.setStatus(EventState.PENDING);
-                } else if (!event.getStatus().equals(EventState.CANCELED) && dto.getStateAction().equals(StateAction.CANCEL_REVIEW)) {
+                } else if (!event.getStatus().equals(EventState.CANCELED) && dto.getEventStateAction().equals(EventStateAction.CANCEL_REVIEW)) {
                     event.setStatus(EventState.CANCELED);
                 }
             } else {
-                if (event.getStatus().equals(EventState.PENDING) && dto.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
+                if (event.getStatus().equals(EventState.PENDING) && dto.getEventStateAction().equals(EventStateAction.PUBLISH_EVENT)) {
                     event.setStatus(EventState.PUBLISHED);
-                } else if (!event.getStatus().equals(EventState.PENDING) && dto.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
+                } else if (!event.getStatus().equals(EventState.PENDING) && dto.getEventStateAction().equals(EventStateAction.PUBLISH_EVENT)) {
                     log.info("method eventValidator - ConflictException \"an event can be published only if it is in the waiting state for publication\"");
                     throw new ConflictException("an event can be published only if it is in the waiting state for publication");
                 }
-                if (!event.getStatus().equals(EventState.PUBLISHED) && dto.getStateAction().equals(StateAction.REJECT_EVENT)) {
+                if (!event.getStatus().equals(EventState.PUBLISHED) && dto.getEventStateAction().equals(EventStateAction.REJECT_EVENT)) {
                     event.setStatus(EventState.CANCELED);
                     event.setPublishedOn(LocalDateTime.now());
-                } else if (event.getStatus().equals(EventState.PUBLISHED) && dto.getStateAction().equals(StateAction.REJECT_EVENT)) {
+                } else if (event.getStatus().equals(EventState.PUBLISHED) && dto.getEventStateAction().equals(EventStateAction.REJECT_EVENT)) {
                     log.info("method eventValidator - ConflictException \"an event can be rejected only if it has not been published yet\"");
                     throw new ConflictException("an event can be rejected only if it has not been published yet");
                 }

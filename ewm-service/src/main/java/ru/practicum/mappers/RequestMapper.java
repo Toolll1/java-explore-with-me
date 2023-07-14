@@ -3,9 +3,9 @@ package ru.practicum.mappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.adapters.DateTimeAdapter;
-import ru.practicum.models.request.Request;
-import ru.practicum.dto.request.RequestDto;
-import ru.practicum.models.request.RequestState;
+import ru.practicum.models.Request;
+import ru.practicum.dto.RequestDto;
+import ru.practicum.models.RequestState;
 import ru.practicum.services.EventService;
 import ru.practicum.services.UserService;
 

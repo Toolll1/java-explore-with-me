@@ -1,8 +1,8 @@
 package ru.practicum.mappers;
 
 import org.springframework.stereotype.Service;
-import ru.practicum.models.category.Category;
-import ru.practicum.dto.category.CategoryDto;
+import ru.practicum.models.Category;
+import ru.practicum.dto.CategoryDto;
 
 @Service
 public class CategoryMapper {

@@ -1,10 +1,10 @@
 package ru.practicum.mappers;
 
 import org.springframework.stereotype.Service;
-import ru.practicum.models.compilation.Compilation;
-import ru.practicum.dto.compilation.CompilationDto;
-import ru.practicum.dto.compilation.NewCompilationDto;
-import ru.practicum.models.event.Event;
+import ru.practicum.models.Compilation;
+import ru.practicum.dto.CompilationDto;
+import ru.practicum.dto.CompilationNewDto;
+import ru.practicum.models.Event;
 import ru.practicum.services.EventService;
 
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public class CompilationMapper {
                 .build();
     }
 
-    public Compilation newDtoToObject(NewCompilationDto dto, EventService eventService) {
+    public Compilation newDtoToObject(CompilationNewDto dto, EventService eventService) {
 
         List<Event> events;
 

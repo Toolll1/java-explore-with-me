@@ -5,16 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.adapters.DateTimeAdapter;
-import ru.practicum.dto.request.RequestDto;
-import ru.practicum.dto.request.RequestUpdateResultDto;
-import ru.practicum.dto.request.UpdateRequestDto;
+import ru.practicum.dto.RequestDto;
+import ru.practicum.dto.RequestUpdateResultDto;
+import ru.practicum.dto.RequestUpdateDto;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ConflictException;
 import ru.practicum.exceptions.ObjectNotFoundException;
 import ru.practicum.mappers.RequestMapper;
-import ru.practicum.models.event.Event;
-import ru.practicum.models.event.EventState;
-import ru.practicum.models.request.*;
+import ru.practicum.models.Event;
+import ru.practicum.models.EventState;
+import ru.practicum.models.Request;
+import ru.practicum.models.RequestState;
 import ru.practicum.repositories.RequestRepository;
 
 import java.time.LocalDateTime;
@@ -81,7 +82,7 @@ public class RequestService {
         return RequestMapper.objectToDto(repository.save(request));
     }
 
-    public RequestUpdateResultDto updateRequestPrivate(UpdateRequestDto dto, Long userId, Long eventId) {
+    public RequestUpdateResultDto updateRequestPrivate(RequestUpdateDto dto, Long userId, Long eventId) {
 
         userService.findUserById(userId);
         Event event = eventService.findEventById(eventId);
@@ -110,7 +111,7 @@ public class RequestService {
         return RequestUpdateResultDto.builder().confirmedRequests(confirmedRequests).rejectedRequests(rejectedRequests).build();
     }
 
-    private void requestProcessing(Event event, UpdateRequestDto dto) {
+    private void requestProcessing(Event event, RequestUpdateDto dto) {
 
         for (Long requestId : dto.getRequestIds()) {
 

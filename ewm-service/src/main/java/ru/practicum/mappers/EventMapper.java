@@ -3,11 +3,11 @@ package ru.practicum.mappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.adapters.DateTimeAdapter;
-import ru.practicum.models.event.Event;
-import ru.practicum.dto.event.EventDto;
-import ru.practicum.dto.event.EventFullDto;
-import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.models.location.Location;
+import ru.practicum.models.Event;
+import ru.practicum.dto.EventDto;
+import ru.practicum.dto.EventFullDto;
+import ru.practicum.dto.EventShortDto;
+import ru.practicum.models.Location;
 import ru.practicum.services.CategoryService;
 
 @Service

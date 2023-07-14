@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ObjectNotFoundException;
-import ru.practicum.models.category.Category;
-import ru.practicum.dto.category.CategoryDto;
+import ru.practicum.models.Category;
+import ru.practicum.dto.CategoryDto;
 import ru.practicum.mappers.CategoryMapper;
 import ru.practicum.repositories.CategoryRepository;
 

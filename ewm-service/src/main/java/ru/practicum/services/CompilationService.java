@@ -7,10 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ObjectNotFoundException;
-import ru.practicum.models.compilation.Compilation;
-import ru.practicum.dto.compilation.CompilationDto;
+import ru.practicum.models.Compilation;
+import ru.practicum.dto.CompilationDto;
 import ru.practicum.mappers.CompilationMapper;
-import ru.practicum.dto.compilation.NewCompilationDto;
+import ru.practicum.dto.CompilationNewDto;
 import ru.practicum.repositories.CompilationRepository;
 
 import java.util.List;
@@ -26,7 +26,7 @@ public class CompilationService {
     private final CompilationMapper mapper;
     private final EventService eventService;
 
-    public CompilationDto createCompilationAdmin(NewCompilationDto dto) {
+    public CompilationDto createCompilationAdmin(CompilationNewDto dto) {
 
         if (dto.getPinned() == null) {
             dto.setPinned(false);
@@ -46,7 +46,7 @@ public class CompilationService {
         repository.deleteById(compId);
     }
 
-    public CompilationDto updateCompilationAdmin(NewCompilationDto dto, Long compId) {
+    public CompilationDto updateCompilationAdmin(CompilationNewDto dto, Long compId) {
 
         Compilation compilation = findCompilationById(compId);
 
