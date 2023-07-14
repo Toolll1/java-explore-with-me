@@ -19,6 +19,6 @@ public class EventUpdateDto {
     private final Boolean paid;
     private final Integer participantLimit;
     private final Boolean requestModeration;
-    private EventStateAction eventStateAction;
+    private EventStateAction stateAction;
     private final String title;
 }

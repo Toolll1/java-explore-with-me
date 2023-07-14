@@ -263,24 +263,24 @@ public class EventService {
         if (dto.getRequestModeration() != null) {
             event.setRequestModeration(dto.getRequestModeration());
         }
-        if (dto.getEventStateAction() != null) {
+        if (dto.getStateAction() != null) {
             if (!checkAdmin) {
-                if (event.getStatus().equals(EventState.CANCELED) && dto.getEventStateAction().equals(EventStateAction.SEND_TO_REVIEW)) {
+                if (event.getStatus().equals(EventState.CANCELED) && dto.getStateAction().equals(EventStateAction.SEND_TO_REVIEW)) {
                     event.setStatus(EventState.PENDING);
-                } else if (!event.getStatus().equals(EventState.CANCELED) && dto.getEventStateAction().equals(EventStateAction.CANCEL_REVIEW)) {
+                } else if (!event.getStatus().equals(EventState.CANCELED) && dto.getStateAction().equals(EventStateAction.CANCEL_REVIEW)) {
                     event.setStatus(EventState.CANCELED);
                 }
             } else {
-                if (event.getStatus().equals(EventState.PENDING) && dto.getEventStateAction().equals(EventStateAction.PUBLISH_EVENT)) {
+                if (event.getStatus().equals(EventState.PENDING) && dto.getStateAction().equals(EventStateAction.PUBLISH_EVENT)) {
                     event.setStatus(EventState.PUBLISHED);
-                } else if (!event.getStatus().equals(EventState.PENDING) && dto.getEventStateAction().equals(EventStateAction.PUBLISH_EVENT)) {
+                } else if (!event.getStatus().equals(EventState.PENDING) && dto.getStateAction().equals(EventStateAction.PUBLISH_EVENT)) {
                     log.info("method eventValidator - ConflictException \"an event can be published only if it is in the waiting state for publication\"");
                     throw new ConflictException("an event can be published only if it is in the waiting state for publication");
                 }
-                if (!event.getStatus().equals(EventState.PUBLISHED) && dto.getEventStateAction().equals(EventStateAction.REJECT_EVENT)) {
+                if (!event.getStatus().equals(EventState.PUBLISHED) && dto.getStateAction().equals(EventStateAction.REJECT_EVENT)) {
                     event.setStatus(EventState.CANCELED);
                     event.setPublishedOn(LocalDateTime.now());
-                } else if (event.getStatus().equals(EventState.PUBLISHED) && dto.getEventStateAction().equals(EventStateAction.REJECT_EVENT)) {
+                } else if (event.getStatus().equals(EventState.PUBLISHED) && dto.getStateAction().equals(EventStateAction.REJECT_EVENT)) {
                     log.info("method eventValidator - ConflictException \"an event can be rejected only if it has not been published yet\"");
                     throw new ConflictException("an event can be rejected only if it has not been published yet");
                 }
