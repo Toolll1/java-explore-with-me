@@ -4,10 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.model.Hit;
-import ru.practicum.model.HitDto;
-import ru.practicum.model.HitMapper;
-import ru.practicum.model.StatsDto;
+import ru.practicum.dto.HitDto;
+import ru.practicum.mappers.HitMapper;
+import ru.practicum.dto.StatsDto;
 import ru.practicum.repository.StatsRepository;
 
 import java.time.LocalDateTime;
@@ -22,7 +23,7 @@ public class StatsService {
     private final StatsRepository repository;
     private final HitMapper mapper;
 
-    public HitDto create(HitDto dto) {
+    public HitDto createHit(HitDto dto) {
 
         Hit hit = repository.save(mapper.dtoToObject(dto));
 
@@ -34,7 +35,8 @@ public class StatsService {
     public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
 
         if (start.isAfter(end)) {
-            throw new IllegalArgumentException("Invalid time interval");
+            log.info("method getStats - BadRequestException \"invalid time interval\"");
+            throw new BadRequestException("Invalid time interval");
         }
 
         if (uris == null || uris.isEmpty()) {

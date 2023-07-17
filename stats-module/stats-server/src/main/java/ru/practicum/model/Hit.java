@@ -15,7 +15,7 @@ public class Hit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "hit_id")
-    private final Integer id;
+    private final Long id;
     @Column(name = "hit_app", nullable = false, length = 320)
     private final String app;
     @Column(name = "hit_uri", nullable = false, length = 320)

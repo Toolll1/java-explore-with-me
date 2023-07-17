@@ -1,6 +1,8 @@
-package ru.practicum.model;
+package ru.practicum.mappers;
 
 import org.springframework.stereotype.Service;
+import ru.practicum.model.Hit;
+import ru.practicum.dto.HitDto;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

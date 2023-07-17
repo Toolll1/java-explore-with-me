@@ -32,6 +32,23 @@ services:
     container_name: ewm-service
     ports:
       - "8080:8080"
+    depends_on:
+      - ewm-db
+      - stats-server
+    environment:
+      - STATS_SERVER_URL=http://stats-server:9090
+      - EWM_DB_NAME=ewm
+      - EWM_USER=root
+      - EWM_PASSWORD=root
+      - EWM_DB_HOST=db
+      - EWM_DB_PORT=5432
 
-    #ewm-db:
-    # image: postgres:14-alpine
+  ewm-db:
+    image: postgres:14-alpine
+    container_name: ewm-db
+    ports:
+      - "6542:5432"
+    environment:
+      - POSTGRES_DB=ewm
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
