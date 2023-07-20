@@ -94,12 +94,6 @@ public class CompilationService {
 
     private PageRequest pageableCreator(Integer from, Integer size) {
 
-        if (from < 0 || size <= 0) {
-            log.info("method pageableCreator - " +
-                    "BadRequestException \"the from parameter must be greater than or equal to 0; size is greater than 0\"");
-            throw new BadRequestException("the from parameter must be greater than or equal to 0; size is greater than 0");
-        }
-
         return PageRequest.of(from / size, size);
     }
 

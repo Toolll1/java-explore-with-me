@@ -10,6 +10,8 @@ import ru.practicum.dto.EventShortDto;
 import ru.practicum.models.Location;
 import ru.practicum.services.CategoryService;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class EventMapper {
@@ -31,7 +33,7 @@ public class EventMapper {
                 .build();
     }
 
-    public static EventFullDto objectToFullDto(Event event) {
+    public static EventFullDto objectToFullDto(Event event, List<Object> comments) {
 
         return EventFullDto.builder()
                 .id(event.getId())
@@ -50,6 +52,7 @@ public class EventMapper {
                 .publishedOn(event.getPublishedOn() != null ? DateTimeAdapter.dateToString(event.getPublishedOn()) : null)
                 .state(event.getStatus())
                 .views(event.getViews())
+                .comments(comments)
                 .build();
     }
 

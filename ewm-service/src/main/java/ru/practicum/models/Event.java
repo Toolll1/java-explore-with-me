@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -55,4 +56,7 @@ public class Event {
     private Integer views;
     @Column(name = "confirmed_requests")
     private Integer confirmedRequests;
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "event_id")
+    private List<Comment> comments;
 }

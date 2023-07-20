@@ -3,6 +3,7 @@ package ru.practicum.controllers.priv;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.EventDto;
 import ru.practicum.dto.EventFullDto;
@@ -19,6 +20,7 @@ import javax.validation.constraints.Min;
 import java.util.List;
 
 @Slf4j
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/users/{userId}/events")
@@ -67,21 +69,25 @@ public class EventControllerPrivate {
 
     @GetMapping("/{eventId}")
     public EventFullDto getEventPrivate(@PathVariable Long userId,
-                                        @PathVariable Long eventId) {
+                                        @PathVariable Long eventId,
+                                        @RequestParam(value = "from", defaultValue = "0") @Min(0) Integer commentFrom,
+                                        @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer commentSize) {
 
         log.info("Received a request to search event for params: userId {}, eventId {}", userId, eventId);
 
-        return eventService.getEventPrivate(userId, eventId);
+        return eventService.getEventPrivate(userId, eventId, commentFrom, commentSize);
     }
 
     @PatchMapping("/{eventId}")
     public EventFullDto updateEventPrivate(@RequestBody EventUpdateDto dto,
                                            @PathVariable Long userId,
-                                           @PathVariable Long eventId) {
+                                           @PathVariable Long eventId,
+                                           @RequestParam(value = "from", defaultValue = "0") @Min(0) Integer commentFrom,
+                                           @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer commentSize) {
 
         log.info("Received a request to Private update a event {}. userId = {}, eventId = {}", dto, userId, eventId);
 
-        return eventService.updateEventPrivate(dto, userId, eventId);
+        return eventService.updateEventPrivate(dto, userId, eventId, commentFrom, commentSize);
     }
 
 }

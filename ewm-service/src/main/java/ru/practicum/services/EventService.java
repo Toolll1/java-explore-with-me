@@ -12,22 +12,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.HttpClient.StatsClient;
 import ru.practicum.adapters.DateTimeAdapter;
-import ru.practicum.dto.EventDto;
-import ru.practicum.dto.EventFullDto;
-import ru.practicum.dto.EventShortDto;
-import ru.practicum.dto.EventUpdateDto;
+import ru.practicum.dto.*;
 import ru.practicum.exceptions.BadRequestException;
 import ru.practicum.exceptions.ConflictException;
 import ru.practicum.exceptions.ObjectNotFoundException;
+import ru.practicum.mappers.CommentMapper;
 import ru.practicum.mappers.EventMapper;
-import ru.practicum.dto.HitDto;
-import ru.practicum.dto.StatsDto;
-import ru.practicum.models.Event;
-import ru.practicum.models.EventState;
-import ru.practicum.models.EventStateAction;
+import ru.practicum.models.*;
 
 import javax.persistence.criteria.*;
+import javax.validation.constraints.Min;
 
+import ru.practicum.repositories.BanRepository;
+import ru.practicum.repositories.CommentRepository;
 import ru.practicum.repositories.EventRepository;
 
 import java.time.LocalDateTime;
@@ -40,11 +37,111 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventService {
 
-    private final EventRepository repository;
+    private final EventRepository eventRepository;
+    private final BanRepository banRepository;
+    private final CommentRepository commentRepository;
     private final EventMapper eventMapper;
+    private final CommentMapper commentMapper;
     private final UserService userService;
     private final CategoryService categoryService;
     private final StatsClient statsClient;
+
+    public CommentFullDto createComment(CommentCreateDto dto, Long userId, Long eventId) {
+
+        User commentator = userService.findUserById(userId);
+        Event event = findEventById(eventId);
+
+        if (!event.getStatus().equals(EventState.PUBLISHED)) {
+            throw new BadRequestException("you can only comment on published events");
+        }
+
+        Optional<Ban> optionalBan = banRepository.findByCommentatorId(userId);
+
+        if (optionalBan.isPresent()) {
+            Ban ban = optionalBan.get();
+
+            if (ban.getEndOfBan().isAfter(LocalDateTime.now())) {
+                throw new BadRequestException("You are not allowed to write comments before " + DateTimeAdapter.dateToString(ban.getEndOfBan()));
+            } else {
+                banRepository.delete(ban);
+            }
+        }
+
+        Comment comment = commentMapper.dtoToObject(dto);
+
+        comment.setCreatedOn(LocalDateTime.now());
+        comment.setCommentator(commentator);
+        comment.setEvent(event);
+
+        return CommentMapper.objectToFullDto(commentRepository.save(comment));
+    }
+
+    public CommentFullUpdateDto updateComment(CommentCreateDto dto, Long commentId, Long userId, Long eventId) {
+
+        Comment comment = availabilityControl(commentId, userId, eventId);
+
+        comment.setUpdateOn(LocalDateTime.now());
+        comment.setText(dto.getText());
+
+        return CommentMapper.objectToFullUpdateDto(commentRepository.save(comment));
+    }
+
+    public void deleteCommentPrivate(Long commentId, Long userId, Long eventId) {
+
+        availabilityControl(commentId, userId, eventId);
+
+        commentRepository.deleteById(commentId);
+    }
+
+    public Object getCommentDto(Long commentId) {
+
+        Comment comment = findCommentById(commentId);
+
+        if (comment.getUpdateOn() == null) {
+            return CommentMapper.objectToFullDto(comment);
+        } else {
+            return CommentMapper.objectToFullUpdateDto(comment);
+        }
+    }
+
+    public List<Object> getComments(Event event, Long eventId, Integer from, Integer size) {
+
+        List<Comment> comments;
+
+        if (event == null) {
+            findEventById(eventId);
+
+            PageRequest pageable = pageableCreator(from, size, "COMMENT_DATE");
+            comments = commentRepository.findAllByEventId(eventId, pageable);
+        } else {
+            comments = event.getComments().stream().sorted(Comparator.comparing(Comment::getCreatedOn))
+                    .skip(from / size).limit(size).collect(Collectors.toList());
+        }
+
+        List<Object> objectList = new LinkedList<>();
+
+        for (Comment comment : comments) {
+            if (comment.getUpdateOn() == null) {
+                objectList.add(CommentMapper.objectToFullDto(comment));
+            } else {
+                objectList.add(CommentMapper.objectToFullUpdateDto(comment));
+            }
+        }
+
+        return objectList;
+    }
+
+    public void deleteCommentAdmin(Long commentId, Long eventId) {
+
+        Comment comment = findCommentById(commentId);
+        findEventById(eventId);
+
+        if (!comment.getEvent().getId().equals(eventId)) {
+            throw new BadRequestException("this event does not have a comment with this id");
+        }
+
+        commentRepository.deleteById(commentId);
+    }
 
     public EventFullDto createEventPrivate(EventDto dto, Long userId) {
 
@@ -68,17 +165,17 @@ public class EventService {
             event.setParticipantLimit(0);
         }
 
-        return EventMapper.objectToFullDto(repository.save(event));
+        return EventMapper.objectToFullDto(eventRepository.save(event), new ArrayList<>());
     }
 
     public List<EventShortDto> getEventsPrivate(Long userId, Integer from, Integer size) {
 
         PageRequest pageable = pageableCreator(from, size, null);
 
-        return repository.findAllByInitiatorId(userId, pageable).stream().map(EventMapper::objectToShortDto).collect(Collectors.toList());
+        return eventRepository.findAllByInitiatorId(userId, pageable).stream().map(EventMapper::objectToShortDto).collect(Collectors.toList());
     }
 
-    public EventFullDto getEventPrivate(Long userId, Long eventId) {
+    public EventFullDto getEventPrivate(Long userId, Long eventId, Integer commentFrom, Integer commentSize) {
 
         userService.findUserById(userId);
 
@@ -88,18 +185,22 @@ public class EventService {
             log.info("method getEventPrivate - ObjectNotFoundException \"you are not the initiator of this event\"");
             throw new ObjectNotFoundException("you are not the initiator of this event");
         } else {
-            return EventMapper.objectToFullDto(event);
+
+
+            return EventMapper.objectToFullDto(event, getComments(event, null, commentFrom, commentSize));
         }
     }
 
     public List<EventFullDto> getEventsAdmin(List<Long> users, List<String> states, List<Long> categories,
-                                             String rangeStart, String rangeEnd, Integer from, Integer size) {
+                                             String rangeStart, String rangeEnd, Integer from, Integer size, @Min(0) Integer commentFrom, @Min(1) Integer commentSize) {
 
         PageRequest pageable = pageableCreator(from, size, null);
         Page<Event> eventPage = creatingRequestAdmin(users, states, categories, rangeStart, rangeEnd, pageable);
         Set<Event> eventsSet = eventPage.stream().collect(Collectors.toSet());
 
-        return eventsSet.stream().map(EventMapper::objectToFullDto).collect(Collectors.toList());
+        return eventsSet.stream()
+                .map(x -> EventMapper.objectToFullDto(x, getComments(x, null, commentFrom, commentSize)))
+                .collect(Collectors.toList());
     }
 
     public List<EventShortDto> getEventsPublic(String text, List<Long> categories, Boolean paid, String rangeStart,
@@ -115,7 +216,7 @@ public class EventService {
         return eventsSet.stream().map(EventMapper::objectToShortDto).collect(Collectors.toList());
     }
 
-    public EventFullDto getEventPublic(Long eventId, String ip, String path) {
+    public EventFullDto getEventPublic(Long eventId, String ip, String path, @Min(0) Integer commentFrom, @Min(1) Integer commentSize) {
 
         Event event = findEventById(eventId);
 
@@ -132,15 +233,15 @@ public class EventService {
         if (!statsDto.isEmpty()) {
 
             event.setViews(Math.toIntExact(statsDto.get(0).getHits()));
-            repository.save(event);
+            eventRepository.save(event);
         }
 
         createHit(ip, path);
 
-        return EventMapper.objectToFullDto(event);
+        return EventMapper.objectToFullDto(event, getComments(event, null, commentFrom, commentSize));
     }
 
-    public EventFullDto updateEventPrivate(EventUpdateDto dto, Long userId, Long eventId) {
+    public EventFullDto updateEventPrivate(EventUpdateDto dto, Long userId, Long eventId, @Min(0) Integer commentFrom, @Min(1) Integer commentSize) {
 
         userService.findUserById(userId);
 
@@ -156,28 +257,30 @@ public class EventService {
             throw new ConflictException("you can only change canceled events or events in the state of waiting for moderation");
         }
 
-        Event newEvent = eventValidator(dto, oldEvent, maximumHoursDeviation, false);
+        Event event = eventValidator(dto, oldEvent, maximumHoursDeviation, false);
+        eventRepository.save(event);
 
-        return EventMapper.objectToFullDto(repository.save(newEvent));
+        return EventMapper.objectToFullDto(event, getComments(event, null, commentFrom, commentSize));
     }
 
-    public EventFullDto updateEventAdmin(EventUpdateDto dto, Long eventId) {
+    public EventFullDto updateEventAdmin(EventUpdateDto dto, Long eventId, @Min(0) Integer commentFrom, @Min(1) Integer commentSize) {
 
-        Event event = findEventById(eventId);
+        Event oldEvent = findEventById(eventId);
         int maximumHoursDeviation = 1;
-        Event newEvent = eventValidator(dto, event, maximumHoursDeviation, true);
+        Event event = eventValidator(dto, oldEvent, maximumHoursDeviation, true);
+        eventRepository.save(event);
 
-        return EventMapper.objectToFullDto(repository.save(newEvent));
+        return EventMapper.objectToFullDto(event, getComments(event, null, commentFrom, commentSize));
     }
 
     public void updateEventRequest(Event event) {
 
-        repository.save(event);
+        eventRepository.save(event);
     }
 
     public Event findEventById(Long eventId) {
 
-        return repository.findById(eventId).orElseThrow(() -> new ObjectNotFoundException("There is no event with this id"));
+        return eventRepository.findById(eventId).orElseThrow(() -> new ObjectNotFoundException("There is no event with this id"));
     }
 
     private void createHit(String ip, String path) {
@@ -202,11 +305,6 @@ public class EventService {
 
     private PageRequest pageableCreator(Integer from, Integer size, String sort) {
 
-        if (from < 0 || size <= 0) {
-            log.info("method pageableCreator - BadRequestException \"the from parameter must be greater than or equal " +
-                    "to 0; size is greater than 0\"");
-            throw new BadRequestException("the from parameter must be greater than or equal to 0; size is greater than 0");
-        }
         if (sort == null || sort.isEmpty()) {
             return PageRequest.of(from / size, size);
         }
@@ -216,6 +314,8 @@ public class EventService {
                 return PageRequest.of(from / size, size, Sort.by("eventDate"));
             case "VIEWS":
                 return PageRequest.of(from / size, size, Sort.by("views").descending());
+            case "COMMENT_DATE":
+                return PageRequest.of(from / size, size, Sort.by("createdOn"));
             default:
                 throw new BadRequestException("Unknown sort: " + sort);
         }
@@ -301,7 +401,7 @@ public class EventService {
     private Page<Event> creatingRequestPublic(String text, List<Long> categories, Boolean paid, String rangeStart,
                                               String rangeEnd, Boolean onlyAvailable, PageRequest pageable) {
 
-        return repository.findAll((root, criteriaQuery, criteriaBuilder) -> {
+        return eventRepository.findAll((root, criteriaQuery, criteriaBuilder) -> {
 
             List<Predicate> predicates = new ArrayList<>();
 
@@ -346,7 +446,7 @@ public class EventService {
     private Page<Event> creatingRequestAdmin(List<Long> users, List<String> states, List<Long> categories,
                                              String rangeStart, String rangeEnd, PageRequest pageable) {
 
-        return repository.findAll((root, criteriaQuery, criteriaBuilder) -> {
+        return eventRepository.findAll((root, criteriaQuery, criteriaBuilder) -> {
 
             List<Predicate> predicates = new ArrayList<>();
 
@@ -390,5 +490,28 @@ public class EventService {
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         }, pageable);
+    }
+
+    private Comment availabilityControl(Long commentId, Long userId, Long eventId) {
+
+        Comment comment = findCommentById(commentId);
+
+        userService.findUserById(userId);
+        findEventById(eventId);
+        if (!comment.getCommentator().getId().equals(userId)) {
+            log.info("method updateComment - BadRequestException \"you can't edit someone else's comment\"");
+            throw new BadRequestException("you can't edit someone else's comment");
+        }
+        if (!comment.getEvent().getId().equals(eventId)) {
+            log.info("method updateComment - BadRequestException \"the event id is specified incorrectly\"");
+            throw new BadRequestException("the event id is specified incorrectly");
+        }
+
+        return comment;
+    }
+
+    public Comment findCommentById(Long commentId) {
+
+        return commentRepository.findById(commentId).orElseThrow(() -> new ObjectNotFoundException("There is no comment with this id"));
     }
 }

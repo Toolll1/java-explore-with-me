@@ -2,6 +2,7 @@ package ru.practicum.controllers.pub;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.EventFullDto;
 import ru.practicum.dto.EventShortDto;
@@ -12,6 +13,7 @@ import javax.validation.constraints.Min;
 import java.util.List;
 
 @Slf4j
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/events")
@@ -40,10 +42,13 @@ public class EventControllerPublic {
     }
 
     @GetMapping("/{id}")
-    public EventFullDto getEventPublic(@PathVariable Long id, HttpServletRequest request) {
+    public EventFullDto getEventPublic(@PathVariable Long id,
+                                       @RequestParam(value = "from", defaultValue = "0") @Min(0) Integer commentFrom,
+                                       @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer commentSize,
+                                       HttpServletRequest request) {
 
         log.info("Received a request to public search event for id {}", id);
 
-        return service.getEventPublic(id, request.getRemoteAddr(), request.getRequestURI());
+        return service.getEventPublic(id, request.getRemoteAddr(), request.getRequestURI(), commentFrom, commentSize);
     }
 }
