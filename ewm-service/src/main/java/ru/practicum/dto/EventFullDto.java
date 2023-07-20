@@ -29,5 +29,5 @@ public class EventFullDto {
     private final EventState state;
     private final String title;
     private final Integer views;
-    private List<Object> comments;
+    private List<CommentFullDto> comments;
 }

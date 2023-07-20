@@ -46,11 +46,9 @@ public class CommentControllerPublicTests {
     public void getComment_returnsCommentFullDto_underNormalConditions() {
 
         //when
-        Object object = commentControllerPublic.getComment(comment.getId());
-        CommentFullDto commentFullDto = (CommentFullDto) object;
+        CommentFullDto commentFullDto = commentControllerPublic.getComment(comment.getId());
 
         //then
-        assertInstanceOf(CommentFullDto.class, object);
         assertEquals(commentFullDto.getId(), comment.getId());
         assertEquals(commentFullDto.getCommentator().getId(), user.getId());
         assertEquals(commentFullDto.getText(), "не понравилось");
@@ -65,43 +63,28 @@ public class CommentControllerPublicTests {
                 comment.getId(), user.getId(), event.getId());
 
         //when
-        Object object = commentControllerPublic.getComment(comment.getId());
-        CommentFullUpdateDto commentFullUpdateDto = (CommentFullUpdateDto) object;
+        CommentFullDto commentFullDto = commentControllerPublic.getComment(comment.getId());
 
         //then
-        assertInstanceOf(CommentFullUpdateDto.class, object);
-        assertEquals(commentFullUpdateDto.getId(), comment.getId());
-        assertEquals(commentFullUpdateDto.getCommentator().getId(), user.getId());
-        assertEquals(commentFullUpdateDto.getText(), "жена сказала, что я не прав и мероприятие очень хорошее..");
-        assertNotNull(commentFullUpdateDto.getCreatedOn());
-        assertNotNull(commentFullUpdateDto.getUpdateOn());
+        assertEquals(commentFullDto.getId(), comment.getId());
+        assertEquals(commentFullDto.getCommentator().getId(), user.getId());
+        assertEquals(commentFullDto.getText(), "жена сказала, что я не прав и мероприятие очень хорошее..");
+        assertNotNull(commentFullDto.getCreatedOn());
+        assertNotNull(commentFullDto.getUpdateOn());
     }
 
     @DirtiesContext
     @Test
     public void getComments_returnsCorrectCommentList_underNormalConditions() {
 
-        //given
-        commentControllerPrivate.updateComment(CommentCreateDto.builder().text("после изменения вернется CommentFullUpdateDto").build(),
-                comment.getId(), user.getId(), event.getId());
-        commentControllerPrivate.createComment(CommentCreateDto.builder().text("если не было корректировки, вернется CommentFullDto").build(), user.getId(), event.getId());
-
         //when
-        List<Object> comments = commentControllerPublic.getComments(event.getId(), 0, 20);
-        CommentFullUpdateDto commentFullUpdateDto = (CommentFullUpdateDto) comments.get(0);
-        CommentFullDto commentFullDto = (CommentFullDto) comments.get(1);
+        List<CommentFullDto> comments = commentControllerPublic.getComments(event.getId(), 0, 20);
+
+        CommentFullDto commentFullDto = comments.get(0);
 
         //then
-        assertEquals(comments.size(), 2);
-        assertInstanceOf(CommentFullUpdateDto.class, comments.get(0));
-        assertInstanceOf(CommentFullDto.class, comments.get(1));
-
-        assertEquals(commentFullUpdateDto.getId(), comment.getId());
-        assertEquals(commentFullUpdateDto.getCommentator().getId(), user.getId());
-        assertEquals(commentFullUpdateDto.getText(), "после изменения вернется CommentFullUpdateDto");
-
-        assertEquals(commentFullDto.getId(), 2);
+        assertEquals(comments.size(), 1);
+        assertEquals(commentFullDto.getId(), 1);
         assertEquals(commentFullDto.getCommentator().getId(), user.getId());
-        assertEquals(commentFullDto.getText(), "если не было корректировки, вернется CommentFullDto");
     }
 }

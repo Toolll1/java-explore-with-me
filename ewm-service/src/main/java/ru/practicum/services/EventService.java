@@ -46,6 +46,29 @@ public class EventService {
     private final CategoryService categoryService;
     private final StatsClient statsClient;
 
+    public CommentFullDto createSubComment(CommentCreateDto dto, Long userId, Long commentId) {
+
+        Comment comment = findCommentById(commentId);
+        User commentator = userService.findUserById(userId);
+
+        banControl(userId);
+
+        Comment subComment = commentMapper.dtoToObject(dto);
+
+        subComment.setCreatedOn(LocalDateTime.now());
+        subComment.setCommentator(commentator);
+
+        Comment newSubComment = commentRepository.save(subComment);
+
+        if (comment.getSubComments() == null) {
+            comment.setSubComments(List.of(newSubComment));
+        } else {
+            comment.getSubComments().add(newSubComment);
+        }
+
+        return CommentMapper.objectToFullDto(newSubComment);
+    }
+
     public CommentFullDto createComment(CommentCreateDto dto, Long userId, Long eventId) {
 
         User commentator = userService.findUserById(userId);
@@ -55,17 +78,7 @@ public class EventService {
             throw new BadRequestException("you can only comment on published events");
         }
 
-        Optional<Ban> optionalBan = banRepository.findByCommentatorId(userId);
-
-        if (optionalBan.isPresent()) {
-            Ban ban = optionalBan.get();
-
-            if (ban.getEndOfBan().isAfter(LocalDateTime.now())) {
-                throw new BadRequestException("You are not allowed to write comments before " + DateTimeAdapter.dateToString(ban.getEndOfBan()));
-            } else {
-                banRepository.delete(ban);
-            }
-        }
+        banControl(userId);
 
         Comment comment = commentMapper.dtoToObject(dto);
 
@@ -73,17 +86,19 @@ public class EventService {
         comment.setCommentator(commentator);
         comment.setEvent(event);
 
-        return CommentMapper.objectToFullDto(commentRepository.save(comment));
+        Comment newComment = commentRepository.save(comment);
+
+        return CommentMapper.objectToFullDto(newComment);
     }
 
-    public CommentFullUpdateDto updateComment(CommentCreateDto dto, Long commentId, Long userId, Long eventId) {
+    public CommentFullDto updateComment(CommentCreateDto dto, Long commentId, Long userId, Long eventId) {
 
         Comment comment = availabilityControl(commentId, userId, eventId);
 
         comment.setUpdateOn(LocalDateTime.now());
         comment.setText(dto.getText());
 
-        return CommentMapper.objectToFullUpdateDto(commentRepository.save(comment));
+        return CommentMapper.objectToFullDto(commentRepository.save(comment));
     }
 
     public void deleteCommentPrivate(Long commentId, Long userId, Long eventId) {
@@ -93,18 +108,14 @@ public class EventService {
         commentRepository.deleteById(commentId);
     }
 
-    public Object getCommentDto(Long commentId) {
+    public CommentFullDto getCommentDto(Long commentId) {
 
         Comment comment = findCommentById(commentId);
 
-        if (comment.getUpdateOn() == null) {
-            return CommentMapper.objectToFullDto(comment);
-        } else {
-            return CommentMapper.objectToFullUpdateDto(comment);
-        }
+        return CommentMapper.objectToFullDto(comment);
     }
 
-    public List<Object> getComments(Event event, Long eventId, Integer from, Integer size) {
+    public List<CommentFullDto> getComments(Event event, Long eventId, Integer from, Integer size) {
 
         List<Comment> comments;
 
@@ -118,17 +129,7 @@ public class EventService {
                     .skip(from / size).limit(size).collect(Collectors.toList());
         }
 
-        List<Object> objectList = new LinkedList<>();
-
-        for (Comment comment : comments) {
-            if (comment.getUpdateOn() == null) {
-                objectList.add(CommentMapper.objectToFullDto(comment));
-            } else {
-                objectList.add(CommentMapper.objectToFullUpdateDto(comment));
-            }
-        }
-
-        return objectList;
+        return comments.stream().map(CommentMapper::objectToFullDto).collect(Collectors.toList());
     }
 
     public void deleteCommentAdmin(Long commentId, Long eventId) {
@@ -498,17 +499,33 @@ public class EventService {
         Comment comment = findCommentById(commentId);
 
         userService.findUserById(userId);
+
         findEventById(eventId);
         if (!comment.getCommentator().getId().equals(userId)) {
             log.info("method updateComment - BadRequestException \"you can't edit someone else's comment\"");
             throw new BadRequestException("you can't edit someone else's comment");
         }
-        if (!comment.getEvent().getId().equals(eventId)) {
+        if (comment.getEvent() != null && !comment.getEvent().getId().equals(eventId)) {
             log.info("method updateComment - BadRequestException \"the event id is specified incorrectly\"");
             throw new BadRequestException("the event id is specified incorrectly");
         }
 
         return comment;
+    }
+
+    private void banControl(Long userId) {
+
+        Optional<Ban> optionalBan = banRepository.findByCommentatorId(userId);
+
+        if (optionalBan.isPresent()) {
+            Ban ban = optionalBan.get();
+
+            if (ban.getEndOfBan().isAfter(LocalDateTime.now())) {
+                throw new BadRequestException("You are not allowed to write comments before " + DateTimeAdapter.dateToString(ban.getEndOfBan()));
+            } else {
+                banRepository.delete(ban);
+            }
+        }
     }
 
     public Comment findCommentById(Long commentId) {

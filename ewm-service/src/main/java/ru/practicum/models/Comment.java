@@ -1,12 +1,11 @@
 package ru.practicum.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -32,4 +31,9 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User commentator;
+    @ManyToMany(cascade = CascadeType.ALL, targetEntity = Comment.class)
+    @JoinTable(name = "sub_comments",
+            joinColumns = @JoinColumn(name = "comment_id", referencedColumnName = "comment_id"),
+            inverseJoinColumns = @JoinColumn(name = "sub_comment_id", referencedColumnName = "comment_id"))
+    private List<Comment> subComments = new ArrayList<>();
 }

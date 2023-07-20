@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.dto.CommentFullDto;
 import ru.practicum.services.EventService;
 
 import javax.validation.constraints.Min;
@@ -19,7 +20,7 @@ public class CommentControllerPublic {
     private final EventService service;
 
     @GetMapping("/{commentId}")
-    public Object getComment(@PathVariable Long commentId) {
+    public CommentFullDto getComment(@PathVariable Long commentId) {
 
         log.info("Received a request to search comment for commentId {}", commentId);
 
@@ -27,9 +28,9 @@ public class CommentControllerPublic {
     }
 
     @GetMapping("/events/{eventId}")
-    public List<Object> getComments(@PathVariable Long eventId,
-                                    @RequestParam(value = "from", defaultValue = "0") @Min(0) Integer from,
-                                    @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer size) {
+    public List<CommentFullDto> getComments(@PathVariable Long eventId,
+                                            @RequestParam(value = "from", defaultValue = "0") @Min(0) Integer from,
+                                            @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer size) {
 
         log.info("Received a request to search for all comments for params: from {}, size {}", from, size);
 

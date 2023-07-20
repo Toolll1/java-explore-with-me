@@ -49,6 +49,22 @@ public class CommentControllerPrivateTests {
 
     @DirtiesContext
     @Test
+    public void createSubComment_returnsTheCorrectCommentFullDto_underNormalConditions() {
+
+        //given
+        createComment();
+
+        //when
+        CommentFullDto subComment = commentControllerPrivate.createSubComment(CommentCreateDto.builder().text("и мне").build(), 1L, 1L);
+
+        //then
+        assertEquals(subComment.getId(), 2);
+        assertEquals(subComment.getCommentator().getId(), user.getId());
+        assertEquals(subComment.getText(), "и мне");
+    }
+
+    @DirtiesContext
+    @Test
     public void create_returnsTheCorrectCommentFullDto_underNormalConditions() {
 
         //when
@@ -92,7 +108,7 @@ public class CommentControllerPrivateTests {
         createComment();
 
         //when
-        CommentFullUpdateDto newComment = commentControllerPrivate.updateComment(CommentCreateDto.builder()
+        CommentFullDto newComment = commentControllerPrivate.updateComment(CommentCreateDto.builder()
                         .text("жена сказала, что я не прав и мероприятие очень хорошее..").build(),
                 comment.getId(), user.getId(), event.getId());
 

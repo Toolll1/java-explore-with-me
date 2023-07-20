@@ -17,6 +17,17 @@ public class CommentControllerPrivate {
 
     private final EventService service;
 
+    @PostMapping("/subComment/{commentId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommentFullDto createSubComment(@Valid @RequestBody CommentCreateDto dto,
+                                           @PathVariable Long userId,
+                                           @PathVariable Long commentId) {
+
+        log.info("Received a request to create a comment " + dto);
+
+        return service.createSubComment(dto, userId, commentId);
+    }
+
     @PostMapping("/events/{eventId}")
     @ResponseStatus(HttpStatus.CREATED)
     public CommentFullDto createComment(@Valid @RequestBody CommentCreateDto dto,
@@ -29,10 +40,10 @@ public class CommentControllerPrivate {
     }
 
     @PatchMapping("/events/{eventId}")
-    public CommentFullUpdateDto updateComment(@Valid @RequestBody CommentCreateDto dto,
-                                              @RequestParam Long commentId,
-                                              @PathVariable Long userId,
-                                              @PathVariable Long eventId) {
+    public CommentFullDto updateComment(@Valid @RequestBody CommentCreateDto dto,
+                                        @RequestParam Long commentId,
+                                        @PathVariable Long userId,
+                                        @PathVariable Long eventId) {
 
         log.info("Received a request to update a comment. dto = {}, commentId = {}, userId = {}, eventId = {}", dto, commentId, userId, eventId);
 
