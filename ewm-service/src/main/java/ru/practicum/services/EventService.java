@@ -194,7 +194,7 @@ public class EventService {
     public List<EventFullDto> getEventsAdmin(List<Long> users, List<String> states, List<Long> categories,
                                              String rangeStart, String rangeEnd, Integer from, Integer size, @Min(0) Integer commentFrom, @Min(1) Integer commentSize) {
 
-        PageRequest pageable = pageableCreator(from, size, null);
+        PageRequest pageable = pageableCreator(from, size, "EVENT_DATE");
         Page<Event> eventPage = creatingRequestAdmin(users, states, categories, rangeStart, rangeEnd, pageable);
         Set<Event> eventsSet = eventPage.stream().collect(Collectors.toSet());
 
