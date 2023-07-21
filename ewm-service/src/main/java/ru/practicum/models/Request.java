@@ -19,9 +19,11 @@ public class Request {
     private final Long id;
     @Column(name = "request_date")
     private LocalDateTime created;
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "event_id")
     private Event event;
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User requester;

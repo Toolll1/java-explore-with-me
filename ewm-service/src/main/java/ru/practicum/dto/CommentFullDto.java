@@ -16,5 +16,5 @@ public class CommentFullDto {
     private final String updateOn;
     private final UserShortDto commentator;
     private final String text;
-    private List<SubCommentDto> subComments;
+    private List<CommentFullDto> subComments;
 }

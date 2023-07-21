@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 import ru.practicum.adapters.DateTimeAdapter;
 import ru.practicum.dto.CommentCreateDto;
 import ru.practicum.dto.CommentFullDto;
-import ru.practicum.dto.SubCommentDto;
 import ru.practicum.models.Comment;
+import ru.practicum.repositories.CommentRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,42 +21,22 @@ public class CommentMapper {
                 .build();
     }
 
-    public static CommentFullDto objectToFullDto(Comment comment) {
+    public static CommentFullDto objectToFullDto(Comment comment, CommentRepository commentRepository) {
 
-        List<SubCommentDto> subComments = new ArrayList<>();
+        List<CommentFullDto> subComments = new ArrayList<>();
         String updateOn = null;
 
         if (comment.getSubComments() != null && !comment.getSubComments().isEmpty()) {
-            subComments = comment.getSubComments().stream().map(CommentMapper::objectToSubCommentDto).collect(Collectors.toList());
+            subComments = commentRepository.findAllByParentId(comment.getId())
+                    .stream()
+                    .map(x -> CommentMapper.objectToFullDto(x, commentRepository))
+                    .collect(Collectors.toList());
         }
         if (comment.getUpdateOn() != null) {
             updateOn = DateTimeAdapter.dateToString(comment.getUpdateOn());
         }
 
         return CommentFullDto.builder()
-                .id(comment.getId())
-                .createdOn(DateTimeAdapter.dateToString(comment.getCreatedOn()))
-                .updateOn(updateOn)
-                .commentator(UserMapper.objectToShortDto(comment.getCommentator()))
-                .text(comment.getText())
-                .subComments(subComments)
-                .build();
-    }
-
-    public static SubCommentDto objectToSubCommentDto(Comment comment) {
-
-        List<SubCommentDto> subComments = new ArrayList<>();
-        String updateOn = null;
-
-        if (comment.getSubComments() != null && !comment.getSubComments().isEmpty()) {
-
-            subComments = comment.getSubComments().stream().map(CommentMapper::objectToSubCommentDto).collect(Collectors.toList());
-        }
-        if (comment.getUpdateOn() != null) {
-            updateOn = DateTimeAdapter.dateToString(comment.getUpdateOn());
-        }
-
-        return SubCommentDto.builder()
                 .id(comment.getId())
                 .createdOn(DateTimeAdapter.dateToString(comment.getCreatedOn()))
                 .updateOn(updateOn)

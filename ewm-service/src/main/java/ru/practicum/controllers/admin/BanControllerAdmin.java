@@ -25,7 +25,7 @@ public class BanControllerAdmin {
     public BanDto addCommentatorToBan(@PathVariable Long userId,
                                       @RequestParam @Min(1) Long termInDays) {
 
-        log.info("(Admin) Received to add a user with id  {} to the ban", userId);
+        log.info("Received to add a user with id  {} to the ban", userId);
 
         return service.addToBan(userId, termInDays);
     }
@@ -34,7 +34,7 @@ public class BanControllerAdmin {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeFromBan(@PathVariable Long userId) {
 
-        log.info("(Admin) Request to remove a user with the id {} from the ban", userId);
+        log.info("Request to remove a user with the id {} from the ban", userId);
 
         service.removeFromBanAdmin(userId);
     }
@@ -43,7 +43,7 @@ public class BanControllerAdmin {
     public List<BanDto> getBanList(@RequestParam(value = "from", defaultValue = "0") @Min(0) Integer from,
                                    @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer size) {
 
-        log.info("(Admin) Request for a list of banned users");
+        log.info("Request for a list of banned users");
 
         return service.getBanList(from, size);
     }
@@ -52,7 +52,7 @@ public class BanControllerAdmin {
     public List<BanDto> getActive(@RequestParam(value = "from", defaultValue = "0") @Min(0) Integer from,
                                   @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer size) {
 
-        log.info("(Admin) Request for a list of banned users");
+        log.info("Request for a list of banned users");
 
         return service.getActiveBanList(from, size);
     }
@@ -61,7 +61,7 @@ public class BanControllerAdmin {
     public List<BanDto> getOverdue(@RequestParam(value = "from", defaultValue = "0") @Min(0) Integer from,
                                    @RequestParam(value = "size", defaultValue = "10") @Min(1) Integer size) {
 
-        log.info("(Admin) Request for a list of banned users");
+        log.info("Request for a list of banned users");
 
         return service.getOverdueBanList(from, size);
     }
@@ -70,7 +70,7 @@ public class BanControllerAdmin {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeOverdue() {
 
-        log.info("(Admin) Request to remove all overdue from the ban");
+        log.info("Request to remove all overdue from the ban");
 
         service.removeOverdueFromBan();
     }

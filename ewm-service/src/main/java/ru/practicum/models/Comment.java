@@ -25,15 +25,18 @@ public class Comment {
     private LocalDateTime updateOn;
     @Column(name = "comment_text", nullable = false, length = 7000)
     private String text;
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "event_id")
     private Event event;
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User commentator;
-    @ManyToMany(cascade = CascadeType.ALL, targetEntity = Comment.class)
-    @JoinTable(name = "sub_comments",
-            joinColumns = @JoinColumn(name = "comment_id", referencedColumnName = "comment_id"),
-            inverseJoinColumns = @JoinColumn(name = "sub_comment_id", referencedColumnName = "comment_id"))
+    @Column(name = "parent_comment_id")
+    private Long parentId;
+    @ToString.Exclude
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = Comment.class, fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id", referencedColumnName = "comment_id")
     private List<Comment> subComments = new ArrayList<>();
 }

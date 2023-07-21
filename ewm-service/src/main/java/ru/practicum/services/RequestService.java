@@ -52,7 +52,10 @@ public class RequestService {
 
         userService.findUserById(userId);
 
-        return repository.findByRequesterId(userId).stream().map(RequestMapper::objectToDto).collect(Collectors.toList());
+        return repository.findByRequesterId(userId)
+                .stream()
+                .map(RequestMapper::objectToDto)
+                .collect(Collectors.toList());
     }
 
     public List<RequestDto> getEventRequestPrivate(Long userId, Long eventId) {
@@ -66,8 +69,10 @@ public class RequestService {
             throw new BadRequestException("you cannot upload requests to confirm participation in an event initiated by another user");
         }
 
-        return repository.findByEventInitiatorIdAndEventId(userId, eventId).stream().map(RequestMapper::objectToDto)
-                .sorted(Comparator.comparing(RequestDto::getStatus)).collect(Collectors.toList());
+        return repository.findByEventInitiatorIdAndEventId(userId, eventId)
+                .stream().map(RequestMapper::objectToDto)
+                .sorted(Comparator.comparing(RequestDto::getStatus))
+                .collect(Collectors.toList());
     }
 
     public RequestDto updateRequest(Long userId, Long requestId) {
@@ -145,7 +150,8 @@ public class RequestService {
 
         if (event.getParticipantLimit() != 0 && event.getParticipantLimit().equals(event.getConfirmedRequests())) {
 
-            List<Request> canceledRequests = repository.findAllByEventIdAndStatus(event.getId(), RequestState.PENDING).stream()
+            List<Request> canceledRequests = repository.findAllByEventIdAndStatus(event.getId(), RequestState.PENDING)
+                    .stream()
                     .peek(request -> request.setStatus(RequestState.CANCELED))
                     .collect(Collectors.toList());
 

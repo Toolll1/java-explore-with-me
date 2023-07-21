@@ -21,6 +21,7 @@ public class Ban {
     private LocalDateTime createdOn;
     @Column(name = "end_of_ban")
     private LocalDateTime endOfBan;
+    @ToString.Exclude
     @OneToOne
     @JoinColumn(name = "user_id")
     private User commentator;

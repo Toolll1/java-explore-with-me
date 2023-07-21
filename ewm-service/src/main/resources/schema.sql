@@ -63,12 +63,8 @@ update_on timestamp without time zone,
 comment_text varchar(7000) not null
 CHECK (length(comment_text) > 0),
 event_id bigint references events(event_id),
-user_id bigint not null references users(user_id)
-);
-
-create table if not exists sub_comments (
-comment_id int not null references comments(comment_id),
-sub_comment_id int references comments(comment_id)
+user_id bigint not null references users(user_id),
+parent_comment_id bigint
 );
 
 create table if not exists ban (

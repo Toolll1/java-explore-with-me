@@ -54,21 +54,30 @@ public class BanService {
 
         PageRequest pageable = pageableCreator(from, size);
 
-        return banRepository.findAll(pageable).stream().map(BanMapper::objectToDto).collect(Collectors.toList());
+        return banRepository.findAll(pageable)
+                .stream()
+                .map(BanMapper::objectToDto)
+                .collect(Collectors.toList());
     }
 
     public List<BanDto> getActiveBanList(Integer from, Integer size) {
 
         PageRequest pageable = pageableCreator(from, size);
 
-        return banRepository.findAllByEndOfBanAfter(LocalDateTime.now(), pageable).stream().map(BanMapper::objectToDto).collect(Collectors.toList());
+        return banRepository.findAllByEndOfBanAfter(LocalDateTime.now(), pageable)
+                .stream()
+                .map(BanMapper::objectToDto)
+                .collect(Collectors.toList());
     }
 
     public List<BanDto> getOverdueBanList(Integer from, Integer size) {
 
         PageRequest pageable = pageableCreator(from, size);
 
-        return banRepository.findAllByEndOfBanBefore(LocalDateTime.now(), pageable).stream().map(BanMapper::objectToDto).collect(Collectors.toList());
+        return banRepository.findAllByEndOfBanBefore(LocalDateTime.now(), pageable)
+                .stream()
+                .map(BanMapper::objectToDto)
+                .collect(Collectors.toList());
     }
 
     public void removeOverdueFromBan() {

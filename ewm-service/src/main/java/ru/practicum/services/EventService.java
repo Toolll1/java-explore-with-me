@@ -48,25 +48,18 @@ public class EventService {
 
     public CommentFullDto createSubComment(CommentCreateDto dto, Long userId, Long commentId) {
 
-        Comment comment = findCommentById(commentId);
+        findCommentById(commentId);
         User commentator = userService.findUserById(userId);
 
-        banControl(userId);
+        checkIsBanned(userId);
 
         Comment subComment = commentMapper.dtoToObject(dto);
 
         subComment.setCreatedOn(LocalDateTime.now());
         subComment.setCommentator(commentator);
+        subComment.setParentId(commentId);
 
-        Comment newSubComment = commentRepository.save(subComment);
-
-        if (comment.getSubComments() == null) {
-            comment.setSubComments(List.of(newSubComment));
-        } else {
-            comment.getSubComments().add(newSubComment);
-        }
-
-        return CommentMapper.objectToFullDto(newSubComment);
+        return CommentMapper.objectToFullDto(commentRepository.save(subComment), commentRepository);
     }
 
     public CommentFullDto createComment(CommentCreateDto dto, Long userId, Long eventId) {
@@ -78,7 +71,7 @@ public class EventService {
             throw new BadRequestException("you can only comment on published events");
         }
 
-        banControl(userId);
+        checkIsBanned(userId);
 
         Comment comment = commentMapper.dtoToObject(dto);
 
@@ -88,22 +81,22 @@ public class EventService {
 
         Comment newComment = commentRepository.save(comment);
 
-        return CommentMapper.objectToFullDto(newComment);
+        return CommentMapper.objectToFullDto(newComment, commentRepository);
     }
 
     public CommentFullDto updateComment(CommentCreateDto dto, Long commentId, Long userId, Long eventId) {
 
-        Comment comment = availabilityControl(commentId, userId, eventId);
+        Comment comment = checkIsAvailable(commentId, userId, eventId);
 
         comment.setUpdateOn(LocalDateTime.now());
         comment.setText(dto.getText());
 
-        return CommentMapper.objectToFullDto(commentRepository.save(comment));
+        return CommentMapper.objectToFullDto(commentRepository.save(comment), commentRepository);
     }
 
     public void deleteCommentPrivate(Long commentId, Long userId, Long eventId) {
 
-        availabilityControl(commentId, userId, eventId);
+        checkIsAvailable(commentId, userId, eventId);
 
         commentRepository.deleteById(commentId);
     }
@@ -112,7 +105,7 @@ public class EventService {
 
         Comment comment = findCommentById(commentId);
 
-        return CommentMapper.objectToFullDto(comment);
+        return CommentMapper.objectToFullDto(comment, commentRepository);
     }
 
     public List<CommentFullDto> getComments(Event event, Long eventId, Integer from, Integer size) {
@@ -125,11 +118,17 @@ public class EventService {
             PageRequest pageable = pageableCreator(from, size, "COMMENT_DATE");
             comments = commentRepository.findAllByEventId(eventId, pageable);
         } else {
-            comments = event.getComments().stream().sorted(Comparator.comparing(Comment::getCreatedOn))
-                    .skip(from / size).limit(size).collect(Collectors.toList());
+            comments = event.getComments()
+                    .stream()
+                    .sorted(Comparator.comparing(Comment::getCreatedOn))
+                    .skip(from / size)
+                    .limit(size)
+                    .collect(Collectors.toList());
         }
 
-        return comments.stream().map(CommentMapper::objectToFullDto).collect(Collectors.toList());
+        return comments.stream()
+                .map(x -> CommentMapper.objectToFullDto(x, commentRepository))
+                .collect(Collectors.toList());
     }
 
     public void deleteCommentAdmin(Long commentId, Long eventId) {
@@ -173,7 +172,10 @@ public class EventService {
 
         PageRequest pageable = pageableCreator(from, size, null);
 
-        return eventRepository.findAllByInitiatorId(userId, pageable).stream().map(EventMapper::objectToShortDto).collect(Collectors.toList());
+        return eventRepository.findAllByInitiatorId(userId, pageable)
+                .stream()
+                .map(EventMapper::objectToShortDto)
+                .collect(Collectors.toList());
     }
 
     public EventFullDto getEventPrivate(Long userId, Long eventId, Integer commentFrom, Integer commentSize) {
@@ -197,9 +199,12 @@ public class EventService {
 
         PageRequest pageable = pageableCreator(from, size, null);
         Page<Event> eventPage = creatingRequestAdmin(users, states, categories, rangeStart, rangeEnd, pageable);
-        Set<Event> eventsSet = eventPage.stream().collect(Collectors.toSet());
+        Set<Event> eventsSet = eventPage
+                .stream()
+                .collect(Collectors.toSet());
 
-        return eventsSet.stream()
+        return eventsSet
+                .stream()
                 .map(x -> EventMapper.objectToFullDto(x, getComments(x, null, commentFrom, commentSize)))
                 .sorted(Comparator.comparing(EventFullDto::getId))
                 .collect(Collectors.toList());
@@ -211,11 +216,16 @@ public class EventService {
 
         PageRequest pageable = pageableCreator(from, size, sort);
         Page<Event> eventPage = creatingRequestPublic(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable);
-        Set<Event> eventsSet = eventPage.stream().collect(Collectors.toSet());
+        Set<Event> eventsSet = eventPage
+                .stream()
+                .collect(Collectors.toSet());
 
         createHit(ip, path);
 
-        return eventsSet.stream().map(EventMapper::objectToShortDto).collect(Collectors.toList());
+        return eventsSet
+                .stream()
+                .map(EventMapper::objectToShortDto)
+                .collect(Collectors.toList());
     }
 
     public EventFullDto getEventPublic(Long eventId, String ip, String path, @Min(0) Integer commentFrom, @Min(1) Integer commentSize) {
@@ -462,7 +472,10 @@ public class EventService {
 
             if (states != null && !states.isEmpty()) {
 
-                List<EventState> eventStates = states.stream().map(EventState::valueOf).collect(Collectors.toList());
+                List<EventState> eventStates = states
+                        .stream()
+                        .map(EventState::valueOf)
+                        .collect(Collectors.toList());
 
                 CriteriaBuilder.In<EventState> in = criteriaBuilder.in(root.get("status"));
                 for (EventState status : eventStates) {
@@ -494,7 +507,7 @@ public class EventService {
         }, pageable);
     }
 
-    private Comment availabilityControl(Long commentId, Long userId, Long eventId) {
+    private Comment checkIsAvailable(Long commentId, Long userId, Long eventId) {
 
         Comment comment = findCommentById(commentId);
 
@@ -513,7 +526,7 @@ public class EventService {
         return comment;
     }
 
-    private void banControl(Long userId) {
+    private void checkIsBanned(Long userId) {
 
         Optional<Ban> optionalBan = banRepository.findByCommentatorId(userId);
 
