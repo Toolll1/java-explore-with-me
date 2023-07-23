@@ -6,6 +6,8 @@ import lombok.Data;
 import ru.practicum.models.EventState;
 import ru.practicum.models.Location;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @Builder
@@ -27,4 +29,5 @@ public class EventFullDto {
     private final EventState state;
     private final String title;
     private final Integer views;
+    private List<CommentFullDto> comments;
 }

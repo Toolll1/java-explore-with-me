@@ -1,9 +1,6 @@
 package ru.practicum.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.List;
@@ -20,6 +17,7 @@ public class Compilation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "compilation_id")
     private final Long id;
+    @ToString.Exclude
     @ManyToMany(cascade = CascadeType.ALL, targetEntity = Event.class)
     @JoinTable(name = "compilations_events",
             joinColumns = @JoinColumn(name = "compilation_id", referencedColumnName = "compilation_id"),

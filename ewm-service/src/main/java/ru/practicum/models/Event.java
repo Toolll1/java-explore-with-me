@@ -1,12 +1,10 @@
 package ru.practicum.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -22,9 +20,11 @@ public class Event {
     private final Long id;
     @Column(name = "annotation", nullable = false)
     private String annotation;
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
+    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User initiator;
@@ -55,4 +55,8 @@ public class Event {
     private Integer views;
     @Column(name = "confirmed_requests")
     private Integer confirmedRequests;
+    @ToString.Exclude
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "event_id")
+    private List<Comment> comments;
 }

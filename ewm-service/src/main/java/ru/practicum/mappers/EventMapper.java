@@ -3,12 +3,15 @@ package ru.practicum.mappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.adapters.DateTimeAdapter;
+import ru.practicum.dto.CommentFullDto;
 import ru.practicum.models.Event;
 import ru.practicum.dto.EventDto;
 import ru.practicum.dto.EventFullDto;
 import ru.practicum.dto.EventShortDto;
 import ru.practicum.models.Location;
 import ru.practicum.services.CategoryService;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class EventMapper {
                 .build();
     }
 
-    public static EventFullDto objectToFullDto(Event event) {
+    public static EventFullDto objectToFullDto(Event event, List<CommentFullDto> comments) {
 
         return EventFullDto.builder()
                 .id(event.getId())
@@ -50,6 +53,7 @@ public class EventMapper {
                 .publishedOn(event.getPublishedOn() != null ? DateTimeAdapter.dateToString(event.getPublishedOn()) : null)
                 .state(event.getStatus())
                 .views(event.getViews())
+                .comments(comments)
                 .build();
     }
 

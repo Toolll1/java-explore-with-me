@@ -41,9 +41,15 @@ public class UserService {
         }
 
         if (ids == null || ids.isEmpty()) {
-            return repository.findAll(PageRequest.of(from / size, size)).stream().map(UserMapper::objectToDto).collect(Collectors.toList());
+            return repository.findAll(PageRequest.of(from / size, size))
+                    .stream()
+                    .map(UserMapper::objectToDto)
+                    .collect(Collectors.toList());
         } else {
-            return repository.findAllByIdIn(ids, PageRequest.of(from / size, size)).stream().map(UserMapper::objectToDto).collect(Collectors.toList());
+            return repository.findAllByIdIn(ids, PageRequest.of(from / size, size))
+                    .stream()
+                    .map(UserMapper::objectToDto)
+                    .collect(Collectors.toList());
         }
     }
 

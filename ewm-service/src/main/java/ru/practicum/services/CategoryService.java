@@ -69,7 +69,10 @@ public class CategoryService {
             throw new BadRequestException("the from parameter must be greater than or equal to 0; size is greater than 0");
         }
 
-        return repository.findAll(PageRequest.of(from / size, size)).stream().map(CategoryMapper::objectToDto).collect(Collectors.toList());
+        return repository.findAll(PageRequest.of(from / size, size))
+                .stream()
+                .map(CategoryMapper::objectToDto)
+                .collect(Collectors.toList());
     }
 
     public Category findCategoryById(Long catId) {
